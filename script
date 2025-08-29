@@ -1,0 +1,150 @@
+print("ABG Interpreter V.1.7")
+print("-" * 50)
+
+# input parameters
+ph = input("please enter pH: ")
+co2 = input("please enter pCO2 in mmHg: ")
+hco3 = input("please enter serum Bicarbonate level in mEq/L: ")
+na = input("please enter serum Sodium level in mEq/L: ")
+cl = input("please enter serum Chloride level in mEq/L: ")
+alb = input("please enter serum Albumin level in mg/dL: ")
+acuity = input("is it an acute or a chronic disorder? ")
+
+# variable conversions
+ph = float(ph)
+co2 = float(co2)
+hco3 = float(hco3)
+na = float(na)
+cl = float(cl)
+alb = float(alb)
+acuity = str(acuity)
+
+# anionic gap calculations
+gap = round(float(na - (hco3 + cl)), ndigits=4)
+gap_normal = 12
+correct_gap = round(float(gap + 2.5 * (4 - alb)), ndigits=4)
+excess_gap = round(float(correct_gap - gap_normal), ndigits=4)
+base_deficit = round(float(0.93 * (hco3 - 24.4 + 14.8 * (ph - 7.4))), ndigits=4)
+
+# compensation formulas
+winter_metacidosis = round(float((1.5 * hco3) + 8), ndigits=4)
+met_alk = round(float(40 + (0.7 * (hco3 - 24))), ndigits=4)
+resp_acid_acute = round(float(24 + ((co2 - 40) / 10)), ndigits=4)
+resp_acid_chronic = round(float(24 + (4 * ((co2 - 40) / 10))), ndigits=4)
+resp_alk_a = round(float(24 - (2 * ((40 - co2) / 10))), ndigits=4)
+resp_alk_c = round(float(24 - (5 * ((40 - co2) / 10))), ndigits=4)
+
+print("-" * 50)
+
+# function core
+def abg():
+    print("Interpretation: ")
+
+    # respiratory acidosis
+    if ph < 7.35 and co2 > 45:
+        print("- primary disorder: respiratory acidosis")
+        if acuity == "acute":
+            print("- expected HCO3: ", resp_acid_acute, "mEq/L")
+            if hco3 > (resp_acid_acute + 3):
+                print("- overcompensation/secondary metabolic alkalosis")
+            elif hco3 < (resp_acid_acute - 3):
+                print("- inadequate compensation/secondary metabolic acidosis")
+            else:
+                print("- compensation mechanisms are probably adequate")
+        elif acuity == "chronic":
+            print("- expected HCO3: ", resp_acid_chronic, 'mEq/L')
+            if hco3 > (resp_acid_chronic + 3):
+                print("- overcompensation or secondary metabolic alkalosis")
+            elif hco3 < (resp_acid_chronic - 3):
+                print("- inadequate compensation/secondary metabolic acidosis")
+            else:
+                print("- compensation mechanisms are probably adequate")
+        if 22 < hco3 < 26:
+            print("Uncompensated disorder")
+
+    # respiratory alkalosis
+    elif ph > 7.45 and co2 < 35:
+        print('- primary disorder: respiratory alkalosis')
+        if acuity == "acute":
+            print("- expected HCO3: ", resp_alk_a, "mEq/L")
+            if hco3 < (resp_alk_a - 3):
+                print("- overcompensation/secondary metabolic acidosis")
+            elif hco3 > (resp_alk_a + 3):
+                print("- inadequate compensation/secondary metabolic alkalosis")
+            else:
+                print("- compensation mechanisms are probably adequate")
+        elif acuity == "chronic":
+            print("- expected HCO3: ", resp_alk_c, "mEq/L")
+            if hco3 < (resp_alk_c - 3):
+                print("- overcompensation/secondary metabolic acidosis")
+            elif hco3 > (resp_alk_c + 3):
+                print("- inadequate compensation/secondary metabolic alkalosis")
+            else:
+                print("- compensation mechanisms are probably adequate")
+        if 22 < hco3 < 26:
+            print("- Uncompensated disorder")
+
+    # metabolic acidosis
+    elif ph < 7.35 and hco3 < 22:
+        print('- Primary disorder: metabolic acidosis')
+        if co2 < (winter_metacidosis - 2):
+            print("- Overcompensation/secondary respiratory alkalosis ")
+        elif co2 > (winter_metacidosis + 2):
+            print('- inadequate compensation/secondary respiratory acidosis')
+        else:
+            print("- Compensation mechanisms are probably adequate")
+        if (hco3 + excess_gap) < 22:
+            print('- Concurrent non-anionic gap metabolic acidosis is present')
+        elif (hco3 + excess_gap) > 26:
+            print('- Concurrent metabolic alkalosis is present')
+        print("- Expected pCO2: ", winter_metacidosis, "mmHg")
+        print('- Base deficit/excess: ', base_deficit, "mEq/L")
+        print("- Anionic gap : ", gap, "mEq/L")
+        print("- Corrected anionic gap: ", correct_gap, "mEq/L")
+        print('- Delta gap: ', excess_gap, "mEq/L")
+        print('- Delta HCO3-: ', 25 - hco3, "mEq/L")
+        print("- Delta-Delta Gradient: ", excess_gap - (25 - hco3), "mEq/L")
+        if 35 < co2 < 45:
+            print("- Uncompensated disorder")
+
+    # metabolic alkalosis
+    elif ph > 7.45 and hco3 > 26:
+        print('- primary disorder: metabolic alkalosis')
+        print("- expected pCO2: ", met_alk, 'mmHg')
+        if co2 < met_alk - 5:
+            print("- inadequate compensation/secondary respiratory alkalosis")
+        elif co2 > met_alk + 5:
+            print("- overcompensation/secondary respiratory acidosis")
+        else:
+            print("- compensation mechanisms are probably adequate")
+        if 35 < co2 < 45:
+            print("- Uncompensated disorder")
+
+    # fully compensated disorders
+    elif 7.35 < ph < 7.45:
+        if (hco3 < 22 and co2 < 35) or (hco3 > 26 and co2 > 45):
+            print("- This ABG is Abnormal despite normal pH")
+            print("- Unknown primary disorder, review patient history")
+            print("- Full compensation took place")
+
+        elif (hco3 < 22 and co2 > 45) or (hco3 > 26 and co2 < 35):
+            print("- Bicarbonate and pCO2 values are inconsistent with pH")
+            print("- Consider repeating this ABG")
+
+        elif (22 < hco3 < 26) and co2 < 35:
+            print("- impending respiratory alkalosis")
+        elif (22 < hco3 < 26) and co2 > 45:
+            print("- impending respiratory acidosis")
+        elif (35 < co2 < 45) and hco3 < 22:
+            print("- impending metabolic acidosis")
+        elif (35 < co2 < 45) and hco3 > 26:
+            print("- impending metabolic alkalosis")
+        else:
+            print("- Apparently normal ABG")
+
+
+abg()
+
+print("-" * 50)
+
+input("press enter to close__")
